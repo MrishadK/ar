@@ -3,61 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAR - Place Food on Table</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@react-three/xr@latest/dist/react-three-xr.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/vr/WebXRButton.js"></script>
-</head>
-<body style="margin: 0; overflow: hidden;">
-    <script>
-        let camera, scene, renderer, controller, model;
-        let reticle; // Reticle for detecting surfaces
+    <title>WebAR Burger</title>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.145/build/three.module.js';
+        import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/webxr/ARButton.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/loaders/GLTFLoader.js';
+
+        let camera, scene, renderer, controller;
+        let burgerModel = null;
 
         function init() {
-            // Create scene and camera
+            // Create Scene
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            scene.add(camera);
+
+            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true; // Enable WebXR
+            renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Add light
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-            scene.add(light);
-
-            // Load AR button
-            document.body.appendChild(WEBXR.createButton(renderer));
-
-            // Load AR session
-            renderer.xr.addEventListener('sessionstart', async () => {
-                const session = renderer.xr.getSession();
-                const referenceSpace = await session.requestReferenceSpace('local');
-                const hitTestSource = await session.requestHitTestSource({ space: referenceSpace });
-
-                session.addEventListener('select', () => placeModel(hitTestSource));
+            // Load Burger Model
+            const loader = new GLTFLoader();
+            loader.load('burger.glb', (gltf) => {
+                burgerModel = gltf.scene;
+                burgerModel.scale.set(0.2, 0.2, 0.2); // Scale the burger
             });
 
-            // Load the reticle (indicator for flat surfaces)
-            const geometry = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2);
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            reticle = new THREE.Mesh(geometry, material);
-            reticle.visible = false;
-            scene.add(reticle);
-
-            // Load GLTF model (burger.glb)
-            const loader = new THREE.GLTFLoader();
-            loader.load('burger.glb', gltf => {
-                model = gltf.scene;
-                model.scale.set(0.5, 0.5, 0.5); // Adjust model size
-                model.visible = false;
-                scene.add(model);
+            // AR Button
+            const arButton = ARButton.createButton(renderer, {
+                requiredFeatures: ['hit-test'], // Enables surface detection
             });
+            document.body.appendChild(arButton);
 
-            // Add controller for user interaction
+            // AR Controller
             controller = renderer.xr.getController(0);
+            controller.addEventListener('select', onPlaceObject);
             scene.add(controller);
+
+            animate();
+        }
+
+        function onPlaceObject() {
+            if (!burgerModel) return;
+
+            const hitTestResults = controller.hitTest(0);
+            if (hitTestResults.length > 0) {
+                const hitPose = hitTestResults[0].getPose(controller.space);
+                if (hitPose) {
+                    // Clone and place the burger model
+                    const modelClone = burgerModel.clone();
+                    modelClone.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+                    scene.add(modelClone);
+                }
+            }
         }
 
         function animate() {
@@ -66,19 +68,31 @@
             });
         }
 
-        function placeModel(hitTestSource) {
-            if (hitTestSource && model) {
-                const hitTestResults = hitTestSource.getHitTestResults();
-                if (hitTestResults.length > 0) {
-                    const hitPose = hitTestResults[0].getPose();
-                    model.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-                    model.visible = true;
-                }
-            }
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+    <style>
+        body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; }
+        #view-ar-btn {
+            position: absolute;
+            bottom: 20px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 10;
         }
+    </style>
+</head>
+<body>
+    <button id="view-ar-btn">View AR</button>
 
-        init();
-        animate();
+    <script>
+        document.getElementById('view-ar-btn').addEventListener('click', () => {
+            document.querySelector('button').click(); // Simulate AR Button click
+        });
     </script>
 </body>
 </html>
