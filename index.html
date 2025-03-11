@@ -1,99 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAR Burger</title>
-    
-    <style>
-        body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; }
-        #view-ar-btn {
-            position: absolute;
-            bottom: 20px;
-            padding: 15px 30px;
-            font-size: 18px;
-            background: #ff5722;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            z-index: 10;
-        }
-    </style>
-
-    <!-- Load Three.js and its components -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.145/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/js/WebXR/ARButton.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/js/loaders/GLTFLoader.js"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markerless AR - Burger on Tabletop</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    .arjs-loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-    <button id="view-ar-btn">View AR</button>
+  <!-- AR.js Scene -->
+  <a-scene
+    vr-mode-ui="enabled: false"
+    embedded
+    arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;"
+  >
+    <!-- Markerless AR (Hit Testing) -->
+    <a-entity
+      id="burger"
+      gltf-model="url(burger.glb)"
+      scale="0.1 0.1 0.1"
+      position="0 0 0"
+      rotation="0 0 0"
+      animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
+      arjs-hit-test="targetElement: #burger;"
+    ></a-entity>
 
-    <script>
-        let camera, scene, renderer, controller, burgerModel;
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+  </a-scene>
 
-        function init() {
-            console.log("Initializing WebAR...");
-            document.body.style.background = "lightgray"; // Debugging UI
+  <!-- Loading Message -->
+  <div class="arjs-loader">Loading AR experience...</div>
 
-            // Scene
-            scene = new THREE.Scene();
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-            scene.add(camera);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
-            document.body.appendChild(renderer.domElement);
-
-            // AR Button
-            const arButton = ARButton.createButton(renderer);
-            document.body.appendChild(arButton);
-
-            // Load Burger Model
-            const loader = new THREE.GLTFLoader();
-            loader.load('burger.glb', (gltf) => {
-                burgerModel = gltf.scene;
-                burgerModel.scale.set(0.2, 0.2, 0.2);
-                console.log("Burger model loaded!");
-            }, undefined, (error) => {
-                console.error("Error loading model:", error);
-            });
-
-            // Controller
-            controller = renderer.xr.getController(0);
-            controller.addEventListener('select', placeBurger);
-            scene.add(controller);
-
-            animate();
-        }
-
-        function placeBurger() {
-            if (!burgerModel) {
-                console.warn("Burger model not ready!");
-                return;
-            }
-            const modelClone = burgerModel.clone();
-            modelClone.position.set(0, 0, -0.5); // Place in front of user
-            scene.add(modelClone);
-            console.log("Burger placed!");
-        }
-
-        function animate() {
-            renderer.setAnimationLoop(() => {
-                renderer.render(scene, camera);
-            });
-        }
-
-        document.getElementById('view-ar-btn').addEventListener('click', () => {
-            init();
-            document.getElementById('view-ar-btn').style.display = 'none'; // Hide button after clicking
-        });
-
-    </script>
+  <script>
+    // Hide loader when AR scene is loaded
+    document.querySelector('a-scene').addEventListener('loaded', function () {
+      document.querySelector('.arjs-loader').style.display = 'none';
+    });
+  </script>
 </body>
 </html>
