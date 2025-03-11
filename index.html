@@ -19,6 +19,18 @@
       font-size: 18px;
       color: white;
     }
+    .arjs-surface-message {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -32,10 +44,9 @@
     <a-entity
       id="burger"
       gltf-model="url(burger.glb)"
-      scale="0.1 0.1 0.1"
+      scale="0.05 0.05 0.05" <!-- Smaller size -->
       position="0 0 0"
-      rotation="0 0 0"
-      animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
+      visible="false" <!-- Initially hidden -->
       arjs-hit-test="targetElement: #burger;"
     ></a-entity>
 
@@ -46,10 +57,31 @@
   <!-- Loading Message -->
   <div class="arjs-loader">Loading AR experience...</div>
 
+  <!-- Surface Detection Message -->
+  <div class="arjs-surface-message">Point your camera at a flat surface to place the burger.</div>
+
   <script>
     // Hide loader when AR scene is loaded
     document.querySelector('a-scene').addEventListener('loaded', function () {
       document.querySelector('.arjs-loader').style.display = 'none';
+    });
+
+    // Show surface detection message and place the burger when the surface is detected
+    const burger = document.querySelector('#burger');
+    const surfaceMessage = document.querySelector('.arjs-surface-message');
+
+    burger.addEventListener('arjs-hit-test-start', function () {
+      surfaceMessage.style.display = 'block'; // Show surface detection message
+    });
+
+    burger.addEventListener('arjs-hit-test-achieved', function () {
+      burger.setAttribute('visible', 'true'); // Show the burger
+      surfaceMessage.style.display = 'none'; // Hide surface detection message
+    });
+
+    burger.addEventListener('arjs-hit-test-lost', function () {
+      burger.setAttribute('visible', 'false'); // Hide the burger
+      surfaceMessage.style.display = 'block'; // Show surface detection message again
     });
   </script>
 </body>
