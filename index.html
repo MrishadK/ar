@@ -4,12 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebAR Burger</title>
-
-    <!-- Include Three.js and supporting scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.145/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/webxr/ARButton.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/loaders/GLTFLoader.js"></script>
-
+    
     <style>
         body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; }
         #view-ar-btn {
@@ -25,6 +20,12 @@
             z-index: 10;
         }
     </style>
+
+    <!-- Load Three.js and its components -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/js/WebXR/ARButton.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/js/loaders/GLTFLoader.js"></script>
+
 </head>
 <body>
     <button id="view-ar-btn">View AR</button>
@@ -50,7 +51,8 @@
             document.body.appendChild(renderer.domElement);
 
             // AR Button
-            document.body.appendChild(THREE.ARButton.createButton(renderer));
+            const arButton = ARButton.createButton(renderer);
+            document.body.appendChild(arButton);
 
             // Load Burger Model
             const loader = new THREE.GLTFLoader();
