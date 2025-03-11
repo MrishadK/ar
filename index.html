@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markerless AR - Burger on Tabletop</title>
+  <title>AR Burger on Desk</title>
+
+  <!-- A-Frame & AR.js -->
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -34,55 +37,61 @@
   </style>
 </head>
 <body>
+
   <!-- AR.js Scene -->
   <a-scene
     vr-mode-ui="enabled: false"
     embedded
-    arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;"
+    arjs="sourceType: webcam; detectionMode: mono_and_matrix; debugUIEnabled: false;"
   >
-    <!-- Markerless AR (Hit Testing) -->
+    <!-- AR Model: Show Only on Desk -->
     <a-entity
       id="burger"
       gltf-model="url(burger.glb)"
-      scale="0.05 0.05 0.05" <!-- Smaller size -->
+      scale="0.03 0.03 0.03"  <!-- Smaller size -->
       position="0 0 0"
-      visible="false" <!-- Initially hidden -->
+      visible="false"
       arjs-hit-test="targetElement: #burger;"
     ></a-entity>
 
-    <!-- Camera -->
-    <a-entity camera></a-entity>
+    <!-- Camera with Normalized FOV -->
+    <a-entity camera look-controls fov="55"></a-entity>
   </a-scene>
 
   <!-- Loading Message -->
   <div class="arjs-loader">Loading AR experience...</div>
 
   <!-- Surface Detection Message -->
-  <div class="arjs-surface-message">Point your camera at a flat surface to place the burger.</div>
+  <div class="arjs-surface-message">Point your camera at a desk to place the burger.</div>
 
   <script>
-    // Hide loader when AR scene is loaded
     document.querySelector('a-scene').addEventListener('loaded', function () {
       document.querySelector('.arjs-loader').style.display = 'none';
     });
 
-    // Show surface detection message and place the burger when the surface is detected
     const burger = document.querySelector('#burger');
     const surfaceMessage = document.querySelector('.arjs-surface-message');
 
+    // Only show on flat surfaces (Desk detection)
     burger.addEventListener('arjs-hit-test-start', function () {
-      surfaceMessage.style.display = 'block'; // Show surface detection message
+      surfaceMessage.style.display = 'block';  // Show guidance message
     });
 
-    burger.addEventListener('arjs-hit-test-achieved', function () {
-      burger.setAttribute('visible', 'true'); // Show the burger
-      surfaceMessage.style.display = 'none'; // Hide surface detection message
+    burger.addEventListener('arjs-hit-test-achieved', function (event) {
+      const yPosition = event.detail.position.y;
+      if (yPosition > 0.2) { // Ignore surfaces that are too high (like walls)
+        burger.setAttribute('visible', 'false');
+      } else {
+        burger.setAttribute('visible', 'true');
+        surfaceMessage.style.display = 'none';
+      }
     });
 
     burger.addEventListener('arjs-hit-test-lost', function () {
-      burger.setAttribute('visible', 'false'); // Hide the burger
-      surfaceMessage.style.display = 'block'; // Show surface detection message again
+      burger.setAttribute('visible', 'false'); // Hide when surface lost
+      surfaceMessage.style.display = 'block';
     });
   </script>
+
 </body>
 </html>
