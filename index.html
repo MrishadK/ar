@@ -4,72 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebAR Burger</title>
-    <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.145/build/three.module.js';
-        import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/webxr/ARButton.js';
-        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/loaders/GLTFLoader.js';
 
-        let camera, scene, renderer, controller;
-        let burgerModel = null;
+    <!-- Include Three.js and supporting scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/webxr/ARButton.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.145/examples/jsm/loaders/GLTFLoader.js"></script>
 
-        function init() {
-            // Create Scene
-            scene = new THREE.Scene();
-
-            // Camera Setup
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-            scene.add(camera);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
-            document.body.appendChild(renderer.domElement);
-
-            // Load Burger Model
-            const loader = new GLTFLoader();
-            loader.load('burger.glb', (gltf) => {
-                burgerModel = gltf.scene;
-                burgerModel.scale.set(0.2, 0.2, 0.2); // Scale the burger
-            });
-
-            // AR Button
-            const arButton = ARButton.createButton(renderer, {
-                requiredFeatures: ['hit-test'], // Enables surface detection
-            });
-            document.body.appendChild(arButton);
-
-            // AR Controller
-            controller = renderer.xr.getController(0);
-            controller.addEventListener('select', onPlaceObject);
-            scene.add(controller);
-
-            animate();
-        }
-
-        function onPlaceObject() {
-            if (!burgerModel) return;
-
-            const hitTestResults = controller.hitTest(0);
-            if (hitTestResults.length > 0) {
-                const hitPose = hitTestResults[0].getPose(controller.space);
-                if (hitPose) {
-                    // Clone and place the burger model
-                    const modelClone = burgerModel.clone();
-                    modelClone.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-                    scene.add(modelClone);
-                }
-            }
-        }
-
-        function animate() {
-            renderer.setAnimationLoop(() => {
-                renderer.render(scene, camera);
-            });
-        }
-
-        document.addEventListener("DOMContentLoaded", init);
-    </script>
     <style>
         body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; }
         #view-ar-btn {
@@ -90,9 +30,68 @@
     <button id="view-ar-btn">View AR</button>
 
     <script>
+        let camera, scene, renderer, controller, burgerModel;
+
+        function init() {
+            console.log("Initializing WebAR...");
+            document.body.style.background = "lightgray"; // Debugging UI
+
+            // Scene
+            scene = new THREE.Scene();
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            scene.add(camera);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // AR Button
+            document.body.appendChild(THREE.ARButton.createButton(renderer));
+
+            // Load Burger Model
+            const loader = new THREE.GLTFLoader();
+            loader.load('burger.glb', (gltf) => {
+                burgerModel = gltf.scene;
+                burgerModel.scale.set(0.2, 0.2, 0.2);
+                console.log("Burger model loaded!");
+            }, undefined, (error) => {
+                console.error("Error loading model:", error);
+            });
+
+            // Controller
+            controller = renderer.xr.getController(0);
+            controller.addEventListener('select', placeBurger);
+            scene.add(controller);
+
+            animate();
+        }
+
+        function placeBurger() {
+            if (!burgerModel) {
+                console.warn("Burger model not ready!");
+                return;
+            }
+            const modelClone = burgerModel.clone();
+            modelClone.position.set(0, 0, -0.5); // Place in front of user
+            scene.add(modelClone);
+            console.log("Burger placed!");
+        }
+
+        function animate() {
+            renderer.setAnimationLoop(() => {
+                renderer.render(scene, camera);
+            });
+        }
+
         document.getElementById('view-ar-btn').addEventListener('click', () => {
-            document.querySelector('button').click(); // Simulate AR Button click
+            init();
+            document.getElementById('view-ar-btn').style.display = 'none'; // Hide button after clicking
         });
+
     </script>
 </body>
 </html>
