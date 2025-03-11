@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Proper Viewport Meta Tag for Mobile Devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR Burger on Desk</title>
 
   <!-- A-Frame & AR.js -->
@@ -43,6 +44,7 @@
     vr-mode-ui="enabled: false"
     embedded
     arjs="sourceType: webcam; detectionMode: mono_and_matrix; debugUIEnabled: false;"
+    renderer="logarithmicDepthBuffer: true; precision: medium;"
   >
     <!-- AR Model: Show Only on Desk -->
     <a-entity
@@ -54,8 +56,8 @@
       arjs-hit-test="targetElement: #burger;"
     ></a-entity>
 
-    <!-- Camera with Normalized FOV -->
-    <a-entity camera look-controls fov="55"></a-entity>
+    <!-- Camera with Adjusted FOV for Mobile -->
+    <a-entity camera look-controls="enabled: false" fov="80"></a-entity>
   </a-scene>
 
   <!-- Loading Message -->
