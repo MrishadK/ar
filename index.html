@@ -35,6 +35,15 @@
       border-radius: 5px;
       display: none;
     }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background-color: white;
+      border-radius: 50%;
+      position: absolute;
+      pointer-events: auto;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -53,7 +62,6 @@
       scale="0.03 0.03 0.03"  <!-- Smaller size -->
       position="0 0 0"
       visible="false"
-      arjs-hit-test="targetElement: #burger;"
     ></a-entity>
 
     <!-- Camera with Adjusted FOV for Mobile -->
@@ -73,24 +81,84 @@
 
     const burger = document.querySelector('#burger');
     const surfaceMessage = document.querySelector('.arjs-surface-message');
+    let dots = [];
 
-    // Only show on flat surfaces (Desk detection)
-    burger.addEventListener('arjs-hit-test-start', function () {
-      surfaceMessage.style.display = 'block';  // Show guidance message
-    });
+    // Function to create dots on the detected surface
+    function createDot(x, y) {
+      const dot = document.createElement('div');
+      dot.classList.add('dot');
+      dot.style.left = `${x}px`;
+      dot.style.top = `${y}px`;
+      document.body.appendChild(dot);
 
-    burger.addEventListener('arjs-hit-test-achieved', function (event) {
-      const yPosition = event.detail.position.y;
-      if (yPosition > 0.2) { // Ignore surfaces that are too high (like walls)
-        burger.setAttribute('visible', 'false');
-      } else {
+      // Add click event to place the burger
+      dot.addEventListener('click', () => {
+        const scene = document.querySelector('a-scene');
+        const camera = scene.camera;
+
+        // Convert screen coordinates to world coordinates
+        const vector = new THREE.Vector3();
+        vector.set(
+          (x / window.innerWidth) * 2 - 1,
+          -(y / window.innerHeight) * 2 + 1,
+          0.5
+        );
+        vector.unproject(camera);
+
+        const dir = vector.sub(camera.position).normalize();
+        const distance = -camera.position.y / dir.y;
+        const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+
+        // Place the burger at the clicked dot's position
+        burger.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
         burger.setAttribute('visible', 'true');
+
+        // Remove all dots after placing the burger
+        dots.forEach(dot => dot.remove());
+        dots = [];
         surfaceMessage.style.display = 'none';
+      });
+
+      dots.push(dot);
+    }
+
+    // Generate a grid of dots on the detected surface
+    function generateDotMatrix(event) {
+      const { x, y, z } = event.detail.position;
+      if (y > 0.2) return; // Ignore surfaces that are too high (like walls)
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      // Clear previous dots
+      dots.forEach(dot => dot.remove());
+      dots = [];
+
+      // Create a 3x3 grid of dots
+      const spacing = 50; // Distance between dots in pixels
+      for (let row = -1; row <= 1; row++) {
+        for (let col = -1; col <= 1; col++) {
+          const dotX = screenWidth / 2 + col * spacing;
+          const dotY = screenHeight / 2 + row * spacing;
+          createDot(dotX, dotY);
+        }
       }
+    }
+
+    // Handle surface detection events
+    document.querySelector('a-scene').addEventListener('arjs-hit-test-start', () => {
+      surfaceMessage.style.display = 'block'; // Show guidance message
     });
 
-    burger.addEventListener('arjs-hit-test-lost', function () {
-      burger.setAttribute('visible', 'false'); // Hide when surface lost
+    document.querySelector('a-scene').addEventListener('arjs-hit-test-achieved', (event) => {
+      generateDotMatrix(event); // Generate dot matrix on detected surface
+    });
+
+    document.querySelector('a-scene').addEventListener('arjs-hit-test-lost', () => {
+      // Hide burger and remove dots when surface is lost
+      burger.setAttribute('visible', 'false');
+      dots.forEach(dot => dot.remove());
+      dots = [];
       surfaceMessage.style.display = 'block';
     });
   </script>
