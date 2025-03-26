@@ -12,11 +12,12 @@ async function init() {
   // Create a WebGLRenderer
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true; // Enable WebXR
   document.body.appendChild(renderer.domElement);
 
   // Create a scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xcccccc); // Set a light gray background
+  scene.background = new THREE.Color(0xcccccc); // Light gray background
 
   // Add lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -33,28 +34,26 @@ async function init() {
     0.1, // Near clipping plane
     1000 // Far clipping plane
   );
-  camera.position.set(0, 1.6, 3); // Position the camera slightly above and in front of the origin
+  camera.position.set(0, 1.6, 3); // Position the camera
   scene.add(camera);
 
   // Load the GLB model
   const loader = new GLTFLoader();
   loader.load(
-    'assets/wings.glb', // Path to your GLB file
+    'assets/wings.glb',
     (gltf) => {
       console.log('Model loaded successfully:', gltf);
       glbModel = gltf.scene;
-      glbModel.scale.set(0.1, 0.1, 0.1); // Adjust scale if needed
+      glbModel.scale.set(0.1, 0.1, 0.1);
       scene.add(glbModel);
     },
-    undefined, // Progress callback (optional)
-    (error) => {
-      console.error('Error loading model:', error);
-    }
+    undefined,
+    (error) => console.error('Error loading model:', error)
   );
 
-  // Check for WebXR support
-  if (!navigator.xr) {
-    alert('WebXR not supported in this browser.');
+  // Check WebXR Support
+  if (!navigator.xr || !(await navigator.xr.isSessionSupported('immersive-ar'))) {
+    alert('WebXR immersive AR is not supported on this device or browser.');
     return;
   }
 
@@ -62,14 +61,26 @@ async function init() {
   const sessionInit = { optionalFeatures: ['dom-overlay'], domOverlay: { root: document.body } };
   try {
     arSession = await navigator.xr.requestSession('immersive-ar', sessionInit);
-    renderer.xr.enabled = true;
-    renderer.xr.setReferenceSpaceType('local');
     renderer.xr.setSession(arSession);
+    renderer.xr.setReferenceSpaceType('local');
+
+    // Listen for session end
+    arSession.addEventListener('end', () => {
+      console.log('AR session ended.');
+      renderer.setAnimationLoop(null);
+    });
   } catch (error) {
     console.error('Failed to start AR session:', error);
     alert('Failed to start AR session. Please check your device and browser.');
     return;
   }
+
+  // Handle window resizing
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
   // Start rendering
   renderer.setAnimationLoop(render);
@@ -77,9 +88,7 @@ async function init() {
 
 function render() {
   if (glbModel) {
-    // Rotate the model for demonstration purposes
     glbModel.rotation.y += 0.01;
   }
-
   renderer.render(scene, camera);
 }
